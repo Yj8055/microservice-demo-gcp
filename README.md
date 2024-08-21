@@ -14,11 +14,11 @@ cd microservice-demo-gcp
 
 2.	Export required variables
 
-export PROJECT_ID=<project_id>
-export REGION=<region>
+export PROJECT_ID={project_id}
+export REGION={region}
 export REPO_PREFIX=gcr.io/${PROJECT_ID}
 export PROJECT_ID=${PROJECT_ID}
-export TAG=<tag>
+export TAG={tag}
 
 Update varaibles according to your account
 
@@ -50,14 +50,14 @@ gcloud container clusters get-credentials online-boutique\
 8.	Install ngrok 
 
 helm repo add ngrok https://ngrok.github.io/kubernetes-ingress-controller
-export NGROK_AUTHTOKEN=<auth_token>
+export NGROK_AUTHTOKEN={auth_token}
 helm install ngrok-ingress-controller ngrok/kubernetes-ingress-controller \
 	--set credentials.apiKey=$NGROK_API_KEY \
 	--set credentials.authtoken=$NGROK_AUTHTOKEN
 
 kubectl get pods -n ngrok-ingress-controller
 
-export NGROK_DOMAIN="<domain>"
+export NGROK_DOMAIN="{domain}"
 
 9.	create ingress for ngrok
 
