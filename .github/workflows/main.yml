@@ -1,0 +1,71 @@
+name: Deploy Microservice application to GCP
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install gcloud CLI
+        run: |
+          echo "Installing gcloud CLI..."
+          sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates gnupg
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          sudo apt-get install -y google-cloud-sdk
+
+      - name: Install kubectl
+        run: |
+          echo "Installing kubectl..."
+          sudo apt-get install -y kubectl
+
+      - name: Install Helm
+        run: |
+          echo "Installing Helm..."
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Configure gcloud
+        run: |
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+          gcloud config set compute/region ${{ secrets.GCP_REGION }}
+
+      - name: Enable Google Cloud APIs
+        run: |
+          gcloud services enable container.googleapis.com
+
+      - name: Create GKE Cluster
+        run: |
+          gcloud container clusters create-auto online-boutique \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --region=${{ secrets.GCP_REGION }}
+
+      - name: Get GKE Cluster Credentials
+        run: |
+          gcloud container clusters get-credentials online-boutique \
+            --region=${{ secrets.GCP_REGION }} \
+            --project=${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Build and Push Docker Images
+        run: |
+          export PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+          export REGION=${{ secrets.GCP_REGION }}
+          export REPO_PREFIX=gcr.io/${PROJECT_ID}
+          export TAG=v1.0.0
+          ./image-script/buildimages.sh
+
+      - name: Deploy using Helm
+        run: |
+          helm upgrade onlineboutique ./helm-chart --install
